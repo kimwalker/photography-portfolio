@@ -5,5 +5,15 @@
   "slug": "springtime",
   "description": "Springtime test",
   "cover": "/images/uploads/kw020216-1-.jpg",
-  "date": "2020"
+  "date": "2020",
+  "photoSequence": [
+    {
+      "layout": "pair",
+      "photo": "Lockdown"
+    },
+    {
+      "layout": "pair",
+      "photo": "Eggs"
+    }
+  ]
 }
