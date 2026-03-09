@@ -8,12 +8,24 @@
   "date": "2020",
   "photoSequence": [
     {
+      "layout": "single",
+      "photo": "Orange"
+    },
+    {
+      "layout": "single",
+      "photo": "Rocks"
+    },
+    {
       "layout": "pair",
       "photo": "Lockdown"
     },
     {
       "layout": "pair",
       "photo": "Eggs"
+    },
+    {
+      "layout": "single",
+      "photo": "Living Room"
     }
   ]
 }
