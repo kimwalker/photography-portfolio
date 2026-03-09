@@ -1,5 +1,8 @@
 {
   "featured": true,
   "image": "/images/uploads/kw020216-1-.jpg",
-  "title": "Water glass"
+  "title": "Water glass",
+  "projects": [
+    "springtime"
+  ]
 }
