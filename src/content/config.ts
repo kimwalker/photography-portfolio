@@ -7,8 +7,8 @@ const photos = defineCollection({
     title: z.string().optional(),
     alt: z.string().optional().default(''),
     featured: z.boolean().default(false),
-    projects: z.array(z.object({ slug: z.string() })).optional().default([]),
-    collections: z.array(z.object({ slug: z.string() })).optional().default([]),
+projects: z.array(z.string()).optional().default([]),
+collections: z.array(z.string()).optional().default([]),
     date: z.string().optional(),
   }),
 });
