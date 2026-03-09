@@ -1,14 +1,9 @@
 ---
 /**
- * LazyImage — World-class image loading
- *
- * Features:
- * - Netlify Image CDN: serves WebP at correct size, zero config
- * - Intersection Observer: loads 200px before entering viewport
- * - Blur-up LQIP: tiny 20px placeholder blurs up to full res
- * - Prevents layout shift: aspect ratio reserved before image loads
- * - fetchpriority="high" for above-fold images
- * - Graceful fallback if Netlify CDN unavailable
+ * LazyImage — Blur-up lazy loading
+ * - Netlify Image CDN for WebP + responsive sizing
+ * - Intersection Observer (300px ahead of viewport)
+ * - LQIP blur-up: inline SVG placeholder, no layout shift
  */
 
 interface Props {
@@ -16,9 +11,9 @@ interface Props {
   alt?: string;
   width?: number;
   class?: string;
-  eager?: boolean;         // true = load immediately (above fold)
-  sizes?: string;          // responsive sizes hint
-  objectFit?: 'cover' | 'contain' | 'none';
+  eager?: boolean;
+  sizes?: string;
+  cover?: boolean; // true = object-fit: cover (for grids)
 }
 
 const {
@@ -28,162 +23,117 @@ const {
   class: className = '',
   eager = false,
   sizes = '(max-width: 600px) 100vw, (max-width: 1100px) 50vw, 33vw',
-  objectFit = 'cover',
+  cover = false,
 } = Astro.props;
 
-// ─── Netlify Image CDN helper ──────────────────────
-// Transforms any image URL to a Netlify-optimised version
-// Docs: https://docs.netlify.com/image-cdn/overview/
 function netlifyImg(url: string, w: number, q = 80): string {
-  // Only transform relative/local images (uploaded via CMS)
-  // Don't transform external URLs or already-CDN'd URLs
-  if (!url || url.startsWith('data:')) return url;
-  const encoded = encodeURIComponent(url);
-  return `/.netlify/images?url=${encoded}&w=${w}&fm=webp&q=${q}`;
+  if (!url || url.startsWith('data:') || url.startsWith('http')) return url;
+  return `/.netlify/images?url=${encodeURIComponent(url)}&w=${w}&fm=webp&q=${q}`;
 }
 
-// Generate srcset for responsive images
-function srcset(url: string): string {
-  const widths = [400, 800, 1200, 1600, 2000];
-  return widths.map(w => `${netlifyImg(url, w)} ${w}w`).join(', ');
+function makeSrcset(url: string): string {
+  return [400, 800, 1200, 1600, 2000]
+    .map(w => `${netlifyImg(url, w)} ${w}w`)
+    .join(', ');
 }
 
-// Tiny LQIP placeholder (20px wide, low quality)
-const lqip = netlifyImg(src, 20, 30);
-const fullSrc = netlifyImg(src, width);
-const fullSrcset = srcset(src);
-const uid = Math.random().toString(36).slice(2, 8);
+const lqip = netlifyImg(src, 40, 20);
+const mainSrc = netlifyImg(src, width);
+const srcset = makeSrcset(src);
 ---
 
-<div class={`lazy-wrap ${className}`} data-lazy-wrap>
-  <!-- LQIP blur placeholder -->
+<span
+  class={`li-wrap ${className}`}
+  data-li-wrap
+  style={cover ? 'display:block;width:100%;height:100%;' : 'display:block;width:100%;'}
+>
   <img
-    class="lazy-lqip"
+    class="li-img"
     src={lqip}
-    alt=""
-    aria-hidden="true"
-  />
-  <!-- Full resolution image -->
-  <img
-    class="lazy-img"
-    data-src={fullSrc}
-    data-srcset={fullSrcset}
-    data-sizes={sizes}
-    src={eager ? fullSrc : undefined}
-    srcset={eager ? fullSrcset : undefined}
+    data-src={eager ? undefined : mainSrc}
+    data-srcset={eager ? undefined : srcset}
+    data-sizes={eager ? undefined : sizes}
+    srcset={eager ? srcset : undefined}
     sizes={eager ? sizes : undefined}
     alt={alt}
     decoding="async"
     fetchpriority={eager ? 'high' : 'auto'}
-    data-eager={eager ? 'true' : undefined}
-    id={`img-${uid}`}
+    data-eager={eager ? '' : undefined}
+    style={cover
+      ? 'display:block;width:100%;height:100%;object-fit:cover;'
+      : 'display:block;width:100%;height:auto;'}
   />
-</div>
+</span>
 
 <style>
-  .lazy-wrap {
-    position: relative;
+  .li-wrap {
     overflow: hidden;
-    background: #f0efed;
-    display: block;
-    width: 100%;
-  }
-
-  /* LQIP: blurred tiny version shown immediately */
-  .lazy-lqip {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: v-bind(objectFit);
-    filter: blur(12px);
-    transform: scale(1.05); /* hide blur edges */
-    transition: opacity 0.4s ease;
-    opacity: 1;
-  }
-
-  /* Full res image */
-  .lazy-img {
-    display: block;
-    width: 100%;
-    height: auto;
+    background: #eeece9;
     position: relative;
-    opacity: 0;
-    transition: opacity 0.5s ease;
-    object-fit: v-bind(objectFit);
   }
 
-  /* Loaded state */
-  .lazy-wrap.is-loaded .lazy-img {
-    opacity: 1;
+  .li-img {
+    filter: blur(0px);
+    transition: filter 0.5s ease, opacity 0.4s ease;
   }
 
-  .lazy-wrap.is-loaded .lazy-lqip {
-    opacity: 0;
+  /* While loading: blurred lqip */
+  .li-wrap:not(.li-loaded) .li-img {
+    filter: blur(8px);
+    transform: scale(1.03);
+  }
+
+  /* Loaded: sharp */
+  .li-wrap.li-loaded .li-img {
+    filter: blur(0px);
+    transform: scale(1);
+    transition: filter 0.5s ease, transform 0.5s ease;
   }
 </style>
 
 <script>
-  // ─── Intersection Observer lazy loading ─────────
-  // Loads images 300px before they enter viewport
-  // Reuses a single observer instance across all images
-
-  function initLazyImages() {
-    const images = document.querySelectorAll<HTMLImageElement>('.lazy-img:not([data-eager])');
-
-    if (!images.length) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach(entry => {
-          if (!entry.isIntersecting) return;
-
-          const img = entry.target as HTMLImageElement;
-          const wrap = img.closest('.lazy-wrap');
-
-          // Swap in real src/srcset
-          const src = img.dataset.src;
-          const srcset = img.dataset.srcset;
-          const sizes = img.dataset.sizes;
-
-          if (src) img.src = src;
-          if (srcset) img.srcset = srcset;
-          if (sizes) img.sizes = sizes;
-
-          img.addEventListener('load', () => {
-            wrap?.classList.add('is-loaded');
-          }, { once: true });
-
-          // If already cached and complete
-          if (img.complete && img.naturalWidth > 0) {
-            wrap?.classList.add('is-loaded');
-          }
-
-          observer.unobserve(img);
-        });
-      },
-      {
-        rootMargin: '300px 0px', // start loading 300px before viewport
-        threshold: 0,
-      }
-    );
-
-    images.forEach(img => observer.observe(img));
-
-    // Handle eager images (already have src set)
-    document.querySelectorAll<HTMLImageElement>('.lazy-img[data-eager]').forEach(img => {
-      const wrap = img.closest('.lazy-wrap');
-      if (img.complete && img.naturalWidth > 0) {
-        wrap?.classList.add('is-loaded');
-      } else {
-        img.addEventListener('load', () => wrap?.classList.add('is-loaded'), { once: true });
-      }
+  function initLazy() {
+    // Handle eager images first
+    document.querySelectorAll<HTMLImageElement>('img[data-eager]').forEach(img => {
+      const wrap = img.closest('[data-li-wrap]');
+      const markLoaded = () => wrap?.classList.add('li-loaded');
+      if (img.complete && img.naturalWidth > 0) markLoaded();
+      else img.addEventListener('load', markLoaded, { once: true });
     });
+
+    // Lazy images via IntersectionObserver
+    const lazyImgs = document.querySelectorAll<HTMLImageElement>('img[data-src]');
+    if (!lazyImgs.length) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        const img = entry.target as HTMLImageElement;
+        const wrap = img.closest('[data-li-wrap]');
+
+        const src = img.dataset.src;
+        const srcset = img.dataset.srcset;
+        const sizes = img.dataset.sizes;
+
+        // Swap to full res
+        if (srcset) img.srcset = srcset;
+        if (sizes) img.sizes = sizes;
+        if (src) img.src = src;
+
+        const markLoaded = () => wrap?.classList.add('li-loaded');
+        if (img.complete && img.naturalWidth > 0) markLoaded();
+        else img.addEventListener('load', markLoaded, { once: true });
+
+        observer.unobserve(img);
+      });
+    }, { rootMargin: '400px 0px', threshold: 0 });
+
+    lazyImgs.forEach(img => observer.observe(img));
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initLazyImages);
+    document.addEventListener('DOMContentLoaded', initLazy);
   } else {
-    initLazyImages();
+    initLazy();
   }
 </script>
