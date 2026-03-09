@@ -5,27 +5,134 @@ backend:
 media_folder: public/images/uploads
 public_folder: /images/uploads
 
+# Use JSON format for clean data files
+# Astro content collections will read these
+
 collections:
+  # ─── PHOTOS ───────────────────────────────────────────────────────────
+  # Upload once. Tag to projects and/or collections. Mark as featured for homepage.
+  - name: "photos"
+    label: "Photos"
+    label_singular: "Photo"
+    folder: "src/content/photos"
+    create: true
+    format: json
+    extension: json
+    identifier_field: "title"
+    summary: "{{title}}"
+    fields:
+      - label: "Image"
+        name: "image"
+        widget: "image"
+        hint: "Upload your photo here. JPG recommended."
+      - label: "Title"
+        name: "title"
+        widget: "string"
+        hint: "Internal reference title. Not displayed publicly."
+      - label: "Alt text"
+        name: "alt"
+        widget: "string"
+        required: false
+        hint: "Describe the image for accessibility."
+      - label: "Featured on Home"
+        name: "featured"
+        widget: "boolean"
+        default: false
+        hint: "Show this photo on the homepage grid."
+      - label: "Projects"
+        name: "projects"
+        widget: "list"
+        required: false
+        hint: "Enter project slugs this photo belongs to. E.g. 'domestic-office'"
+        field:
+          label: "Project slug"
+          name: "slug"
+          widget: "string"
+      - label: "Collections"
+        name: "collections"
+        widget: "list"
+        required: false
+        hint: "Enter collection slugs this photo belongs to. E.g. 'street'"
+        field:
+          label: "Collection slug"
+          name: "slug"
+          widget: "string"
+      - label: "Date"
+        name: "date"
+        widget: "datetime"
+        required: false
+        date_format: "YYYY-MM-DD"
+        time_format: false
+
+  # ─── PROJECTS ─────────────────────────────────────────────────────────
+  # Series of photos with a narrative theme.
   - name: "projects"
     label: "Projects"
+    label_singular: "Project"
     folder: "src/content/projects"
     create: true
-    slug: "{{slug}}"
+    format: json
+    extension: json
+    identifier_field: "title"
+    summary: "{{order}} — {{title}}"
     fields:
-      - { label: "Title", name: "title", widget: "string" }
-      - { label: "Description", name: "description", widget: "text" }
-      - { label: "Cover Image", name: "cover", widget: "image" }
-      - { label: "Date", name: "date", widget: "datetime" }
-      - { label: "Published", name: "published", widget: "boolean", default: true }
+      - label: "Title"
+        name: "title"
+        widget: "string"
+      - label: "Slug"
+        name: "slug"
+        widget: "string"
+        hint: "URL-safe identifier. Lowercase, hyphens only. E.g. 'domestic-office'"
+      - label: "Date"
+        name: "date"
+        widget: "string"
+        hint: "Display date. E.g. '2020–2021' or 'Spring 2024'"
+      - label: "Description"
+        name: "description"
+        widget: "text"
+        required: false
+        hint: "Optional project description shown at the top of the project page."
+      - label: "Cover Image"
+        name: "cover"
+        widget: "image"
+        hint: "Cover image shown in the projects grid."
+      - label: "Display Order"
+        name: "order"
+        widget: "number"
+        default: 99
+        value_type: "int"
+        hint: "Lower numbers appear first. Use 1, 2, 3... to control order."
+      - label: "Published"
+        name: "published"
+        widget: "boolean"
+        default: true
 
-  - name: "singles"
-    label: "Singles"
-    folder: "src/content/singles"
+  # ─── COLLECTIONS (GALLERIES) ──────────────────────────────────────────
+  # Groupings of disparate images by theme (Street, Landscape, etc.)
+  - name: "galleries"
+    label: "Collections"
+    label_singular: "Collection"
+    folder: "src/content/galleries"
     create: true
-    slug: "{{slug}}"
+    format: json
+    extension: json
+    identifier_field: "title"
     fields:
-      - { label: "Title", name: "title", widget: "string" }
-      - { label: "Image", name: "image", widget: "image" }
-      - { label: "Caption", name: "caption", widget: "text", required: false }
-      - { label: "Date", name: "date", widget: "datetime" }
-      - { label: "Published", name: "published", widget: "boolean", default: true }
+      - label: "Title"
+        name: "title"
+        widget: "string"
+      - label: "Slug"
+        name: "slug"
+        widget: "string"
+        hint: "URL-safe identifier. E.g. 'street' or 'landscape'"
+      - label: "Description"
+        name: "description"
+        widget: "text"
+        required: false
+      - label: "Cover Image"
+        name: "cover"
+        widget: "image"
+      - label: "Published"
+        name: "published"
+        widget: "boolean"
+        default: true

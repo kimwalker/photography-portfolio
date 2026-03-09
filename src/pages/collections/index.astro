@@ -1,0 +1,85 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+
+const allGalleries = await getCollection('galleries', ({ data }) => data.published);
+
+// Redirect to home if no collections exist
+if (allGalleries.length === 0) {
+  return Astro.redirect('/');
+}
+---
+
+<Layout title="Collections" activeNav="collections">
+  <div class="collections-grid">
+    {allGalleries.map((gallery) => (
+      <a href={`/collections/${gallery.data.slug}`} class="collection-item">
+        <div class="collection-cover">
+          <img
+            src={gallery.data.cover}
+            alt={gallery.data.title}
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+        <div class="collection-meta">
+          <h2 class="collection-title">{gallery.data.title}</h2>
+        </div>
+      </a>
+    ))}
+  </div>
+</Layout>
+
+<style>
+  .collections-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 60px 40px;
+    padding: 48px 60px 80px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .collection-item {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+
+  .collection-cover {
+    overflow: hidden;
+    background: #f0f0f0;
+    margin-bottom: 18px;
+  }
+
+  .collection-cover img {
+    display: block;
+    width: 100%;
+    height: auto;
+    transition: transform 0.5s ease, opacity 0.3s ease;
+  }
+
+  .collection-item:hover .collection-cover img {
+    transform: scale(1.02);
+    opacity: 0.9;
+  }
+
+  .collection-meta {
+    text-align: center;
+  }
+
+  .collection-title {
+    font-family: var(--font-sans, 'Syne', sans-serif);
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    color: #111;
+  }
+
+  @media (max-width: 600px) {
+    .collections-grid {
+      grid-template-columns: 1fr;
+      padding: 24px 20px 60px;
+    }
+  }
+</style>

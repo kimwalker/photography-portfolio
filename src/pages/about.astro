@@ -1,0 +1,94 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="About" activeNav="about">
+  <div class="about-page">
+    <div class="about-content">
+
+      <div class="about-text">
+        <p class="about-intro">
+          Kim Walker is a photographer based in Vancouver, BC.
+        </p>
+
+        <p>
+          Working primarily with a Ricoh GR, the work moves between the intimate and the
+          incidental — domestic spaces, passing light, the texture of the everyday. Projects
+          range from long-form documentary series to looser collections gathered around feeling
+          rather than subject.
+        </p>
+
+        <p>
+          Available for commissions and print inquiries.
+        </p>
+
+        <div class="about-links">
+          <a href="mailto:hello@photos.kim">hello@photos.kim</a>
+          <a href="https://instagram.com" target="_blank" rel="noopener">Instagram</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .about-page {
+    min-height: calc(100vh - 52px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+  }
+
+  .about-content {
+    max-width: 500px;
+    width: 100%;
+  }
+
+  .about-text {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .about-intro {
+    font-family: var(--font-serif, 'DM Serif Text', Georgia, serif);
+    font-size: 22px;
+    line-height: 1.4;
+    color: #111;
+  }
+
+  .about-text p {
+    font-family: var(--font-sans, 'Syne', sans-serif);
+    font-size: 13px;
+    line-height: 1.8;
+    color: #555;
+  }
+
+  .about-links {
+    display: flex;
+    gap: 24px;
+    padding-top: 8px;
+  }
+
+  .about-links a {
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: #111;
+    text-decoration: none;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 1px;
+    transition: border-color 0.15s ease;
+  }
+
+  .about-links a:hover {
+    border-color: #111;
+  }
+
+  @media (max-width: 600px) {
+    .about-intro {
+      font-size: 18px;
+    }
+  }
+</style>

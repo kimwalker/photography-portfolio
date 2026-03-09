@@ -1,0 +1,118 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+
+const allProjects = await getCollection('projects', ({ data }) => data.published);
+const projects = allProjects.sort((a, b) => a.data.order - b.data.order);
+---
+
+<Layout title="Projects" activeNav="projects">
+  <div class="projects-grid">
+    {projects.map((project) => (
+      <a href={`/projects/${project.data.slug}`} class="project-item">
+        <div class="project-cover">
+          <img
+            src={project.data.cover}
+            alt={project.data.title}
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+        <div class="project-meta">
+          <h2 class="project-title">{project.data.title}</h2>
+          <span class="project-date">{project.data.date}</span>
+        </div>
+      </a>
+    ))}
+  </div>
+
+  {projects.length === 0 && (
+    <div class="empty-state">
+      <p>No projects yet. Add one in the <a href="/admin">CMS</a>.</p>
+    </div>
+  )}
+</Layout>
+
+<style>
+  .projects-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 60px 40px;
+    padding: 48px 60px 80px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .project-item {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+
+  .project-cover {
+    overflow: hidden;
+    background: #f0f0f0;
+    margin-bottom: 18px;
+  }
+
+  .project-cover img {
+    display: block;
+    width: 100%;
+    height: auto;
+    transition: transform 0.5s ease, opacity 0.3s ease;
+  }
+
+  .project-item:hover .project-cover img {
+    transform: scale(1.02);
+    opacity: 0.9;
+  }
+
+  .project-meta {
+    text-align: center;
+    padding: 0 8px;
+  }
+
+  .project-title {
+    font-family: var(--font-sans, 'Syne', sans-serif);
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    color: #111;
+    margin-bottom: 5px;
+  }
+
+  .project-date {
+    font-size: 11px;
+    color: #999;
+    letter-spacing: 0.06em;
+  }
+
+  .empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: calc(100vh - 52px);
+    font-size: 13px;
+    color: #999;
+  }
+
+  .empty-state a {
+    color: #111;
+    text-decoration: underline;
+  }
+
+  @media (max-width: 900px) {
+    .projects-grid {
+      padding: 32px 32px 60px;
+      gap: 44px 28px;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .projects-grid {
+      grid-template-columns: 1fr;
+      padding: 24px 20px 60px;
+      gap: 40px;
+    }
+  }
+</style>

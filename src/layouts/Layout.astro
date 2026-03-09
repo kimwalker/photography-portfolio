@@ -1,27 +1,294 @@
 ---
-const { title } = Astro.props;
+import { getCollection } from 'astro:content';
+
+interface Props {
+  title?: string;
+  navCenter?: string;
+  navCenterSub?: string;
+  activeNav?: 'home' | 'projects' | 'collections' | 'about';
+}
+
+const { title = 'Kim Walker', navCenter, navCenterSub, activeNav } = Astro.props;
+
+// Show Collections nav item only if published galleries exist
+const galleries = await getCollection('galleries', ({ data }) => data.published);
+const showCollections = galleries.length > 0;
 ---
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{title}</title>
-    <script src="/netlify-identity.js" defer></script>
+    <meta name="description" content="Kim Walker — Photography" />
+    <title>{title ? `${title} — Kim Walker` : 'Kim Walker'}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500&family=DM+Serif+Text:ital@0;1&display=swap" rel="stylesheet" />
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
     <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
+      *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --black: #111010;
+        --gray-dark: #555;
+        --gray-mid: #999;
+        --gray-light: #e8e8e8;
+        --white: #ffffff;
+        --nav-height: 52px;
+        --font-sans: 'Syne', -apple-system, sans-serif;
+        --font-serif: 'DM Serif Text', Georgia, serif;
+      }
+
+      html {
+        background: var(--white);
+        color: var(--black);
+        font-family: var(--font-sans);
+        font-size: 13px;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
       body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
-        background: #0a0a0a;
-        color: #f0f0f0;
         min-height: 100vh;
+      }
+
+      /* ─── NAV ──────────────────────────────────── */
+      nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        height: var(--nav-height);
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        align-items: center;
+        padding: 0 20px;
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--gray-light);
+      }
+
+      .nav-left a {
+        font-size: 13px;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        text-decoration: none;
+        color: var(--black);
+      }
+
+      .nav-center {
+        text-align: center;
+        line-height: 1.3;
+      }
+
+      .nav-center .title {
+        font-size: 12px;
+        color: var(--black);
+        display: block;
+      }
+
+      .nav-center .sub {
+        font-size: 11px;
+        color: var(--gray-mid);
+        display: block;
+      }
+
+      .nav-right {
         display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 20px;
+      }
+
+      .nav-right a {
+        font-size: 12px;
+        letter-spacing: 0.06em;
+        text-decoration: none;
+        color: var(--gray-mid);
+        transition: color 0.15s ease;
+      }
+
+      .nav-right a:hover {
+        color: var(--black);
+      }
+
+      .nav-right a.active {
+        color: var(--black);
+        font-weight: 500;
+      }
+
+      /* ─── MOBILE NAV ───────────────────────────── */
+      .hamburger {
+        display: none;
         flex-direction: column;
+        gap: 4px;
+        cursor: pointer;
+        background: none;
+        border: none;
+        padding: 4px;
+      }
+
+      .hamburger span {
+        display: block;
+        width: 20px;
+        height: 1px;
+        background: var(--black);
+        transition: all 0.2s ease;
+      }
+
+      .hamburger.open span:nth-child(1) {
+        transform: translateY(5px) rotate(45deg);
+      }
+      .hamburger.open span:nth-child(2) {
+        opacity: 0;
+      }
+      .hamburger.open span:nth-child(3) {
+        transform: translateY(-5px) rotate(-45deg);
+      }
+
+      .mobile-menu {
+        display: none;
+        position: fixed;
+        top: var(--nav-height);
+        left: 0;
+        right: 0;
+        background: var(--white);
+        border-bottom: 1px solid var(--gray-light);
+        padding: 16px 20px;
+        z-index: 99;
+        flex-direction: column;
+        gap: 0;
+      }
+
+      .mobile-menu.open {
+        display: flex;
+      }
+
+      .mobile-menu a {
+        font-size: 14px;
+        letter-spacing: 0.04em;
+        text-decoration: none;
+        color: var(--gray-mid);
+        padding: 12px 0;
+        border-bottom: 1px solid var(--gray-light);
+        transition: color 0.15s ease;
+      }
+
+      .mobile-menu a:last-child {
+        border-bottom: none;
+      }
+
+      .mobile-menu a.active {
+        color: var(--black);
+        font-weight: 500;
+      }
+
+      /* ─── MAIN CONTENT ─────────────────────────── */
+      main {
+        padding-top: var(--nav-height);
+      }
+
+      /* ─── RESPONSIVE ───────────────────────────── */
+      @media (max-width: 768px) {
+        nav {
+          grid-template-columns: 1fr auto;
+        }
+
+        .nav-center {
+          display: none;
+        }
+
+        .nav-right {
+          display: none;
+        }
+
+        .hamburger {
+          display: flex;
+        }
       }
     </style>
-<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
   </head>
   <body>
-    <slot />
+    <nav>
+      <div class="nav-left">
+        <a href="/">Kim Walker</a>
+      </div>
+
+      <div class="nav-center">
+        {navCenter ? (
+          <>
+            <span class="title">{navCenter}</span>
+            {navCenterSub && <span class="sub">{navCenterSub}</span>}
+          </>
+        ) : (
+          <span class="sub">Photographer based in Vancouver, BC</span>
+        )}
+      </div>
+
+      <div class="nav-right">
+        <a href="/" class={activeNav === 'home' ? 'active' : ''}>Home</a>
+        <a href="/projects" class={activeNav === 'projects' ? 'active' : ''}>Projects</a>
+        {showCollections && (
+          <a href="/collections" class={activeNav === 'collections' ? 'active' : ''}>Collections</a>
+        )}
+        <a href="/about" class={activeNav === 'about' ? 'active' : ''}>About</a>
+      </div>
+
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </nav>
+
+    <div class="mobile-menu" id="mobile-menu">
+      <a href="/" class={activeNav === 'home' ? 'active' : ''}>Home</a>
+      <a href="/projects" class={activeNav === 'projects' ? 'active' : ''}>Projects</a>
+      {showCollections && (
+        <a href="/collections" class={activeNav === 'collections' ? 'active' : ''}>Collections</a>
+      )}
+      <a href="/about" class={activeNav === 'about' ? 'active' : ''}>About</a>
+    </div>
+
+    <main>
+      <slot />
+    </main>
+
+    <script>
+      // Mobile nav toggle
+      const hamburger = document.getElementById('hamburger');
+      const mobileMenu = document.getElementById('mobile-menu');
+
+      hamburger?.addEventListener('click', () => {
+        hamburger.classList.toggle('open');
+        mobileMenu?.classList.toggle('open');
+      });
+
+      // Close mobile menu on link click
+      mobileMenu?.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+          hamburger?.classList.remove('open');
+          mobileMenu.classList.remove('open');
+        });
+      });
+
+      // Netlify Identity
+      if (window.netlifyIdentity) {
+        window.netlifyIdentity.on("init", (user: any) => {
+          if (!user) {
+            window.netlifyIdentity.on("login", () => {
+              document.location.href = "/admin/";
+            });
+          }
+        });
+      }
+    </script>
   </body>
 </html>
