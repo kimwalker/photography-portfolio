@@ -1,5 +1,8 @@
 {
   "featured": true,
   "image": "/images/uploads/kw020207.jpg",
-  "title": "Flowers"
+  "title": "Flowers",
+  "projects": [
+    "home"
+  ]
 }
