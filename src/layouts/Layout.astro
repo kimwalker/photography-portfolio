@@ -10,7 +10,6 @@ interface Props {
 
 const { title = 'Kim Walker', navCenter, navCenterSub, activeNav } = Astro.props;
 
-// Show Collections nav item only if published galleries exist
 const galleries = await getCollection('galleries', ({ data }) => data.published);
 const showCollections = galleries.length > 0;
 ---
@@ -24,8 +23,7 @@ const showCollections = galleries.length > 0;
     <title>{title ? `${title} — Kim Walker` : 'Kim Walker'}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500&family=DM+Serif+Text:ital@0;1&display=swap" rel="stylesheet" />
-    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400&display=swap" rel="stylesheet" />
     <style>
       *, *::before, *::after {
         box-sizing: border-box;
@@ -34,21 +32,21 @@ const showCollections = galleries.length > 0;
       }
 
       :root {
-        --black: #111010;
+        --black: #111;
         --gray-dark: #555;
         --gray-mid: #999;
         --gray-light: #e8e8e8;
-        --white: #ffffff;
+        --white: #fff;
         --nav-height: 52px;
-        --font-sans: 'Syne', -apple-system, sans-serif;
-        --font-serif: 'DM Serif Text', Georgia, serif;
+        --font: 'Inter', sans-serif;
       }
 
       html {
         background: var(--white);
         color: var(--black);
-        font-family: var(--font-sans);
+        font-family: var(--font);
         font-size: 13px;
+        font-weight: 400;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
       }
@@ -69,7 +67,7 @@ const showCollections = galleries.length > 0;
         grid-template-columns: 1fr 1fr 1fr;
         align-items: center;
         padding: 0 20px;
-        background: rgba(255, 255, 255, 0.92);
+        background: rgba(255,255,255,0.92);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
         border-bottom: 1px solid var(--gray-light);
@@ -77,15 +75,13 @@ const showCollections = galleries.length > 0;
 
       .nav-left a {
         font-size: 13px;
-        font-weight: 500;
-        letter-spacing: 0.04em;
         text-decoration: none;
         color: var(--black);
       }
 
       .nav-center {
         text-align: center;
-        line-height: 1.3;
+        line-height: 1.4;
       }
 
       .nav-center .title {
@@ -109,19 +105,14 @@ const showCollections = galleries.length > 0;
 
       .nav-right a {
         font-size: 12px;
-        letter-spacing: 0.06em;
         text-decoration: none;
         color: var(--gray-mid);
         transition: color 0.15s ease;
       }
 
-      .nav-right a:hover {
-        color: var(--black);
-      }
-
+      .nav-right a:hover,
       .nav-right a.active {
         color: var(--black);
-        font-weight: 500;
       }
 
       /* ─── MOBILE NAV ───────────────────────────── */
@@ -143,15 +134,9 @@ const showCollections = galleries.length > 0;
         transition: all 0.2s ease;
       }
 
-      .hamburger.open span:nth-child(1) {
-        transform: translateY(5px) rotate(45deg);
-      }
-      .hamburger.open span:nth-child(2) {
-        opacity: 0;
-      }
-      .hamburger.open span:nth-child(3) {
-        transform: translateY(-5px) rotate(-45deg);
-      }
+      .hamburger.open span:nth-child(1) { transform: translateY(5px) rotate(45deg); }
+      .hamburger.open span:nth-child(2) { opacity: 0; }
+      .hamburger.open span:nth-child(3) { transform: translateY(-5px) rotate(-45deg); }
 
       .mobile-menu {
         display: none;
@@ -164,16 +149,12 @@ const showCollections = galleries.length > 0;
         padding: 16px 20px;
         z-index: 99;
         flex-direction: column;
-        gap: 0;
       }
 
-      .mobile-menu.open {
-        display: flex;
-      }
+      .mobile-menu.open { display: flex; }
 
       .mobile-menu a {
-        font-size: 14px;
-        letter-spacing: 0.04em;
+        font-size: 13px;
         text-decoration: none;
         color: var(--gray-mid);
         padding: 12px 0;
@@ -181,37 +162,20 @@ const showCollections = galleries.length > 0;
         transition: color 0.15s ease;
       }
 
-      .mobile-menu a:last-child {
-        border-bottom: none;
-      }
+      .mobile-menu a:last-child { border-bottom: none; }
+      .mobile-menu a.active,
+      .mobile-menu a:hover { color: var(--black); }
 
-      .mobile-menu a.active {
-        color: var(--black);
-        font-weight: 500;
-      }
-
-      /* ─── MAIN CONTENT ─────────────────────────── */
+      /* ─── MAIN ─────────────────────────────────── */
       main {
         padding-top: var(--nav-height);
       }
 
-      /* ─── RESPONSIVE ───────────────────────────── */
       @media (max-width: 768px) {
-        nav {
-          grid-template-columns: 1fr auto;
-        }
-
-        .nav-center {
-          display: none;
-        }
-
-        .nav-right {
-          display: none;
-        }
-
-        .hamburger {
-          display: flex;
-        }
+        nav { grid-template-columns: 1fr auto; }
+        .nav-center,
+        .nav-right { display: none; }
+        .hamburger { display: flex; }
       }
     </style>
   </head>
@@ -262,7 +226,6 @@ const showCollections = galleries.length > 0;
     </main>
 
     <script>
-      // Mobile nav toggle
       const hamburger = document.getElementById('hamburger');
       const mobileMenu = document.getElementById('mobile-menu');
 
@@ -271,24 +234,12 @@ const showCollections = galleries.length > 0;
         mobileMenu?.classList.toggle('open');
       });
 
-      // Close mobile menu on link click
       mobileMenu?.querySelectorAll('a').forEach(link => {
         link.addEventListener('click', () => {
           hamburger?.classList.remove('open');
           mobileMenu.classList.remove('open');
         });
       });
-
-      // Netlify Identity
-      if (window.netlifyIdentity) {
-        window.netlifyIdentity.on("init", (user: any) => {
-          if (!user) {
-            window.netlifyIdentity.on("login", () => {
-              document.location.href = "/admin/";
-            });
-          }
-        });
-      }
     </script>
   </body>
 </html>
