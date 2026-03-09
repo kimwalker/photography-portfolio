@@ -1,6 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
+import LazyImage from '../../components/LazyImage.astro';
 
 const allProjects = await getCollection('projects', ({ data }) => data.published);
 const projects = allProjects.sort((a, b) => a.data.order - b.data.order);
@@ -11,11 +12,11 @@ const projects = allProjects.sort((a, b) => a.data.order - b.data.order);
     {projects.map((project) => (
       <a href={`/projects/${project.data.slug}`} class="project-item">
         <div class="project-cover">
-          <img
+          <LazyImage
             src={project.data.cover}
             alt={project.data.title}
-            loading="lazy"
-            decoding="async"
+            width={1200}
+            sizes="(max-width: 600px) 90vw, 45vw"
           />
         </div>
         <div class="project-meta">

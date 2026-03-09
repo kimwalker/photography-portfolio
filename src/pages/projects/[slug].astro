@@ -1,6 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
+import LazyImage from '../../components/LazyImage.astro';
 
 export async function getStaticPaths() {
   const projects = await getCollection('projects', ({ data }) => data.published);
@@ -54,11 +55,12 @@ projectPhotos.sort((a, b) => {
     <div class="image-feed">
       {projectPhotos.map((photo, i) => (
         <div class="feed-item" data-image={photo.data.image}>
-          <img
+          <LazyImage
             src={photo.data.image}
             alt={photo.data.alt || photo.data.title || ''}
-            loading={i < 2 ? 'eager' : 'lazy'}
-            decoding="async"
+            eager={i < 2}
+            width={1400}
+            sizes="(max-width: 700px) 90vw, 900px"
             class="feed-image"
           />
         </div>
@@ -78,11 +80,12 @@ projectPhotos.sort((a, b) => {
         <div class="bottom-grid">
           {projectPhotos.map((photo, i) => (
             <div class="bottom-grid-item">
-              <img
+              <LazyImage
                 src={photo.data.image}
                 alt={photo.data.alt || ''}
-                loading="lazy"
-                decoding="async"
+                width={400}
+                sizes="25vw"
+                objectFit="cover"
               />
             </div>
           ))}

@@ -1,17 +1,15 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import LazyImage from '../components/LazyImage.astro';
 import { getCollection } from 'astro:content';
 
-// Get featured photos. Fallback to all photos if none are featured.
 const allPhotos = await getCollection('photos');
 let photos = allPhotos.filter(p => p.data.featured);
 if (photos.length === 0) photos = allPhotos;
 
-// Serialize for client-side shuffle
 const photoData = photos.map(p => ({
   image: p.data.image,
   alt: p.data.alt || '',
-  title: p.data.title || '',
 }));
 ---
 
@@ -20,12 +18,12 @@ const photoData = photos.map(p => ({
     {photoData.map((photo, i) => (
       <div class="grid-item" data-index={i}>
         <div class="grid-item-inner">
-          <img
+          <LazyImage
             src={photo.image}
             alt={photo.alt}
-            loading={i < 8 ? 'eager' : 'lazy'}
-            decoding="async"
-            onload="this.closest('.grid-item').classList.add('loaded')"
+            eager={i < 6}
+            width={1000}
+            sizes="(max-width: 600px) 50vw, (max-width: 1100px) 33vw, 25vw"
           />
         </div>
       </div>
@@ -40,7 +38,6 @@ const photoData = photos.map(p => ({
 </Layout>
 
 <style>
-  /* ─── MASONRY GRID ──────────────────────────────── */
   .masonry-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -51,25 +48,9 @@ const photoData = photos.map(p => ({
 
   .grid-item {
     padding-bottom: 6px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
   }
 
-  .grid-item.loaded,
-  .grid-item.visible {
-    opacity: 1;
-  }
-
-  /* Wide items span 2 columns — assigned randomly by JS */
-  .grid-item.wide {
-    grid-column: span 2;
-  }
-
-  /* Small items — slightly reduced, gives the Tillmans looseness */
-  .grid-item.small .grid-item-inner {
-    width: 75%;
-    /* Alternate left/right alignment for visual rhythm */
-  }
+  .grid-item.wide { grid-column: span 2; }
 
   .grid-item.small-left .grid-item-inner {
     width: 72%;
@@ -81,24 +62,13 @@ const photoData = photos.map(p => ({
     margin-left: auto;
   }
 
-  .grid-item-inner {
-    overflow: hidden;
-    background: #f0f0f0;
-  }
+  .grid-item-inner { overflow: hidden; }
 
-  .grid-item img {
-    display: block;
-    width: 100%;
-    height: auto;
+  .grid-item:hover .lazy-wrap {
+    opacity: 0.92;
     transition: opacity 0.2s ease;
   }
 
-  /* Hover state — subtle */
-  .grid-item:hover img {
-    opacity: 0.92;
-  }
-
-  /* ─── EMPTY STATE ───────────────────────────────── */
   .empty-state {
     display: flex;
     align-items: center;
@@ -108,16 +78,10 @@ const photoData = photos.map(p => ({
     color: #999;
   }
 
-  .empty-state a {
-    color: #111;
-    text-decoration: underline;
-  }
+  .empty-state a { color: #111; text-decoration: underline; }
 
-  /* ─── RESPONSIVE ────────────────────────────────── */
   @media (max-width: 1100px) {
-    .masonry-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
+    .masonry-grid { grid-template-columns: repeat(3, 1fr); }
   }
 
   @media (max-width: 700px) {
@@ -126,30 +90,12 @@ const photoData = photos.map(p => ({
       gap: 0 4px;
       padding: 12px 12px 48px;
     }
-
-    .grid-item.wide {
-      grid-column: span 2;
-    }
-
     .grid-item.small-left .grid-item-inner,
-    .grid-item.small-right .grid-item-inner {
-      width: 100%;
-    }
-  }
-
-  @media (max-width: 400px) {
-    .masonry-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .grid-item.wide {
-      grid-column: span 1;
-    }
+    .grid-item.small-right .grid-item-inner { width: 100%; }
   }
 </style>
 
 <script define:vars={{ photoData }}>
-  // ─── Fisher-Yates shuffle ────────────────────────
   function shuffle(arr) {
     const a = [...arr];
     for (let i = a.length - 1; i > 0; i--) {
@@ -159,80 +105,56 @@ const photoData = photos.map(p => ({
     return a;
   }
 
-  // ─── Size class assignment ───────────────────────
-  // Gives the Tillmans-esque structured-but-loose feel
-  function getSizeClass(index, total) {
-    const r = Math.random();
-    if (r < 0.12) return 'wide';      // 12% wide (2-col span)
-    if (r < 0.24) return 'small-left'; // 12% small-left
-    if (r < 0.36) return 'small-right'; // 12% small-right
-    return '';                          // 64% standard
-  }
-
-  // ─── Masonry row-span calculation ────────────────
   function setRowSpan(item) {
     const inner = item.querySelector('.grid-item-inner');
     if (!inner) return;
-    const rowGap = 6;
-    const rowHeight = 2;
     const height = inner.getBoundingClientRect().height;
-    const span = Math.ceil((height + rowGap) / (rowHeight + rowGap));
+    if (height === 0) return;
+    const span = Math.ceil((height + 6) / (2 + 6));
     item.style.gridRowEnd = `span ${span}`;
-    item.classList.add('visible');
   }
 
   function initMasonry() {
     const grid = document.getElementById('masonry-grid');
     if (!grid) return;
-
     const items = Array.from(grid.querySelectorAll('.grid-item'));
-    if (items.length === 0) return;
+    if (!items.length) return;
 
-    // Shuffle items in DOM
-    const shuffled = shuffle(items);
-    shuffled.forEach((item, i) => {
-      // Assign size class
-      const sizeClass = getSizeClass(i, shuffled.length);
-      if (sizeClass) item.classList.add(sizeClass);
+    shuffle(items).forEach((item) => {
+      const r = Math.random();
+      if (r < 0.12) item.classList.add('wide');
+      else if (r < 0.24) item.classList.add('small-left');
+      else if (r < 0.36) item.classList.add('small-right');
       grid.appendChild(item);
     });
 
-    // Calculate row spans after images load
-    const imgs = grid.querySelectorAll('img');
-    let loadedCount = 0;
-
-    function onImgLoad(img) {
+    // Recalc spans as images load
+    grid.querySelectorAll('img').forEach(img => {
       const item = img.closest('.grid-item');
-      if (item) setRowSpan(item);
-      loadedCount++;
-    }
-
-    imgs.forEach(img => {
+      if (!item) return;
       if (img.complete && img.naturalWidth > 0) {
-        onImgLoad(img);
+        setRowSpan(item);
       } else {
-        img.addEventListener('load', () => onImgLoad(img));
-        img.addEventListener('error', () => {
-          const item = img.closest('.grid-item');
-          if (item) item.style.display = 'none';
-        });
+        img.addEventListener('load', () => setRowSpan(item));
       }
     });
 
-    // Recalculate on resize (debounced)
-    let resizeTimer;
+    // Also watch for lazy-wrap class changes (blur-up completion)
+    const mo = new MutationObserver(() => {
+      grid.querySelectorAll('.grid-item').forEach(setRowSpan);
+    });
+    grid.querySelectorAll('.lazy-wrap').forEach(wrap => {
+      mo.observe(wrap, { attributes: true, attributeFilter: ['class'] });
+    });
+
+    let t;
     window.addEventListener('resize', () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => {
-        grid.querySelectorAll('.grid-item').forEach(item => setRowSpan(item));
-      }, 150);
+      clearTimeout(t);
+      t = setTimeout(() => grid.querySelectorAll('.grid-item').forEach(setRowSpan), 150);
     });
   }
 
-  // Run after DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initMasonry);
-  } else {
-    initMasonry();
-  }
+  document.readyState === 'loading'
+    ? document.addEventListener('DOMContentLoaded', initMasonry)
+    : initMasonry();
 </script>

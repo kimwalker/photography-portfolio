@@ -1,6 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
+import LazyImage from '../../components/LazyImage.astro';
 
 const allGalleries = await getCollection('galleries', ({ data }) => data.published);
 
@@ -15,11 +16,11 @@ if (allGalleries.length === 0) {
     {allGalleries.map((gallery) => (
       <a href={`/collections/${gallery.data.slug}`} class="collection-item">
         <div class="collection-cover">
-          <img
+          <LazyImage
             src={gallery.data.cover}
             alt={gallery.data.title}
-            loading="lazy"
-            decoding="async"
+            width={1200}
+            sizes="(max-width: 600px) 90vw, 45vw"
           />
         </div>
         <div class="collection-meta">
