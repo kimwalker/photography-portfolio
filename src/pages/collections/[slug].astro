@@ -128,9 +128,9 @@ const hasSequence = sequence.length > 0;
 
 <style>
   .collection-page {
-    max-width: 900px;
+    max-width: 70vw;
     margin: 0 auto;
-    padding: 20px 20px 80px;
+    padding: 20px 0 80px;
   }
 
   .collection-header {
@@ -163,7 +163,7 @@ const hasSequence = sequence.length > 0;
   .feed-pair {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 6px;
+    gap: 32px;
     align-items: start;
   }
 
@@ -215,9 +215,23 @@ const hasSequence = sequence.length > 0;
   .collection-nav-all:hover { color: #111; }
 
   @media (max-width: 700px) {
+    .project-page,
+    .collection-page {
+      max-width: 100%;
+      padding: 16px 16px 60px;
+    }
+
+    .feed-pair {
+      gap: 10px;
+    }
+
+    .bottom-grid { grid-template-columns: repeat(3, 1fr); }
     .feed-img-wrap.is-portrait { width: 80%; }
+    .project-nav-inner,
     .collection-nav-inner { grid-template-columns: 1fr; gap: 16px; }
+    .project-nav-link.next,
     .collection-nav-link.next { text-align: left; }
+    .project-nav-all,
     .collection-nav-all { order: -1; }
   }
 </style>

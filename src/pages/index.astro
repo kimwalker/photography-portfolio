@@ -22,7 +22,7 @@ const photoData = photos.map(p => ({
           alt={photo.alt}
           eager={i < 6}
           width={1000}
-          sizes="(max-width: 600px) 50vw, (max-width: 1100px) 33vw, 25vw"
+          sizes="(max-width: 700px) 92vw, (max-width: 1100px) 33vw, 25vw"
         />
       </div>
     ))}
@@ -36,6 +36,7 @@ const photoData = photos.map(p => ({
 </Layout>
 
 <style>
+  /* ── Desktop: 4-col CSS columns masonry ── */
   .masonry-grid {
     columns: 4;
     column-gap: 20px;
@@ -47,7 +48,6 @@ const photoData = photos.map(p => ({
     margin-bottom: 20px;
   }
 
-  /* Inset variants — different sizes for variety */
   .grid-item.inset-left {
     width: 78%;
     margin-right: auto;
@@ -72,12 +72,11 @@ const photoData = photos.map(p => ({
     margin-right: 0;
   }
 
-  /* Push down: adds top margin for vertical rhythm variation */
   .grid-item.push-down {
     margin-top: 32px;
   }
 
-  .grid-item:hover .li-wrap {
+  .grid-item:hover .li {
     opacity: 0.93;
     transition: opacity 0.2s ease;
   }
@@ -91,32 +90,66 @@ const photoData = photos.map(p => ({
     color: #999;
   }
 
-  .empty-state a {
-    color: #111;
-    text-decoration: underline;
-  }
+  .empty-state a { color: #111; text-decoration: underline; }
 
   @media (max-width: 1100px) {
     .masonry-grid { columns: 3; column-gap: 14px; padding: 24px 28px 60px; }
     .grid-item { margin-bottom: 14px; }
   }
 
+  /* ── Mobile: single column with Tillmans offsets ── */
   @media (max-width: 700px) {
     .masonry-grid {
-      columns: 2;
-      column-gap: 8px;
-      padding: 12px 12px 48px;
+      columns: 1;
+      padding: 20px 20px 48px;
     }
-    .grid-item { margin-bottom: 8px; }
-    .grid-item.inset-left,
-    .grid-item.inset-right,
-    .grid-item.inset-small-left,
-    .grid-item.inset-small-right {
-      width: 100%;
-      margin-left: 0;
-      margin-right: 0;
+
+    .grid-item {
+      margin-bottom: 0;
+      /* reset all desktop widths — JS will assign mobile classes */
+      width: 100% !important;
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+      margin-top: 0 !important;
     }
-    .grid-item.push-down { margin-top: 0; }
+
+    /* Mobile size variants */
+    .grid-item.m-full {
+      width: 100% !important;
+      margin-bottom: 16px;
+    }
+
+    .grid-item.m-right {
+      width: 88% !important;
+      margin-left: auto !important;
+      margin-right: 0 !important;
+      margin-bottom: 16px;
+    }
+
+    .grid-item.m-left {
+      width: 88% !important;
+      margin-left: 0 !important;
+      margin-right: auto !important;
+      margin-bottom: 16px;
+    }
+
+    .grid-item.m-inset-right {
+      width: 72% !important;
+      margin-left: auto !important;
+      margin-right: 0 !important;
+      margin-bottom: 16px;
+    }
+
+    .grid-item.m-inset-left {
+      width: 72% !important;
+      margin-left: 0 !important;
+      margin-right: auto !important;
+      margin-bottom: 16px;
+    }
+
+    .grid-item.m-gap-top {
+      margin-top: 28px !important;
+    }
   }
 </style>
 
@@ -130,28 +163,70 @@ const photoData = photos.map(p => ({
     return a;
   }
 
+  const MOBILE_BP = 700;
+  const desktopClasses = ['inset-left','inset-right','inset-small-left','inset-small-right','push-down'];
+  const mobileClasses  = ['m-full','m-right','m-left','m-inset-right','m-inset-left','m-gap-top'];
+
+  function clearVariantClasses(item) {
+    item.classList.remove(...desktopClasses, ...mobileClasses);
+  }
+
+  function applyDesktopVariants(items) {
+    items.forEach(item => {
+      clearVariantClasses(item);
+      const r = Math.random();
+      if      (r < 0.12) item.classList.add('inset-left');
+      else if (r < 0.24) item.classList.add('inset-right');
+      else if (r < 0.31) item.classList.add('inset-small-left');
+      else if (r < 0.38) item.classList.add('inset-small-right');
+      else if (r < 0.48) item.classList.add('push-down');
+    });
+  }
+
+  function applyMobileVariants(items) {
+    // Single column — vary width and alignment
+    // Avoid two consecutive insets of the same side
+    let lastClass = '';
+    items.forEach((item, i) => {
+      clearVariantClasses(item);
+      const r = Math.random();
+      let cls = 'm-full';
+
+      if (r < 0.30) {
+        // Alternate sides to avoid clustering
+        cls = lastClass === 'm-right' ? 'm-left' : 'm-right';
+      } else if (r < 0.46) {
+        cls = lastClass === 'm-inset-right' ? 'm-inset-left' : 'm-inset-right';
+      } else {
+        cls = 'm-full';
+      }
+
+      item.classList.add(cls);
+      lastClass = cls;
+
+      // Occasionally add extra top gap for rhythm (~20% chance)
+      if (Math.random() < 0.20) item.classList.add('m-gap-top');
+    });
+  }
+
   function initMasonry() {
     const grid = document.getElementById('masonry-grid');
     if (!grid) return;
     const items = Array.from(grid.querySelectorAll('.grid-item'));
     if (!items.length) return;
 
+    const isMobile = window.innerWidth <= MOBILE_BP;
+
     // Shuffle order
     const shuffled = shuffle(items);
-    const classes = ['inset-left', 'inset-right', 'inset-small-left', 'inset-small-right', 'push-down'];
+    shuffled.forEach(item => grid.appendChild(item));
 
-    shuffled.forEach((item, i) => {
-      const r = Math.random();
-      // ~55% full width, ~15% inset, ~10% small inset each side, ~10% push-down
-      if (r < 0.12) item.classList.add('inset-left');
-      else if (r < 0.24) item.classList.add('inset-right');
-      else if (r < 0.31) item.classList.add('inset-small-left');
-      else if (r < 0.38) item.classList.add('inset-small-right');
-      else if (r < 0.48) item.classList.add('push-down');
-      // else: full width, no extra class
-
-      grid.appendChild(item);
-    });
+    // Apply appropriate variants
+    if (isMobile) {
+      applyMobileVariants(shuffled);
+    } else {
+      applyDesktopVariants(shuffled);
+    }
   }
 
   document.readyState === 'loading'
