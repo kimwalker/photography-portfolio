@@ -1,27 +1,26 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { getCollection } from 'astro:content';
 import LazyImage from '../../components/LazyImage.astro';
+import { getCollection } from 'astro:content';
 
 export async function getStaticPaths() {
-  const galleries = await getCollection('galleries', ({ data }) => data.published);
+  const allGalleries = await getCollection('galleries', ({ data }) => data.published);
 
-  return galleries.map((gallery, index) => ({
+  return allGalleries.map((gallery, index) => ({
     params: { slug: gallery.data.slug },
     props: {
       gallery,
-      prevGallery: index > 0 ? galleries[index - 1] : null,
-      nextGallery: index < galleries.length - 1 ? galleries[index + 1] : null,
+      prevGallery: index > 0 ? allGalleries[index - 1] : null,
+      nextGallery: index < allGalleries.length - 1 ? allGalleries[index + 1] : null,
     },
   }));
 }
 
 const { gallery, prevGallery, nextGallery } = Astro.props;
 
-// Get all photos belonging to this collection
 const allPhotos = await getCollection('photos');
 const galleryPhotos = allPhotos.filter(p =>
-  p.data.collections.some(col => col.slug === gallery.data.slug)
+  Array.isArray(p.data.collections) && p.data.collections.includes(gallery.data.slug)
 );
 ---
 
@@ -40,14 +39,12 @@ const galleryPhotos = allPhotos.filter(p =>
 
     <div class="image-feed">
       {galleryPhotos.map((photo, i) => (
-        <div class="feed-item" data-image={photo.data.image}>
+        <div class="feed-item">
           <LazyImage
             src={photo.data.image}
-            alt={photo.data.alt || photo.data.title || ''}
+            alt={photo.data.alt || ''}
             eager={i < 2}
-            width={1400}
-            sizes="(max-width: 700px) 90vw, 900px"
-            class="feed-image"
+            sizes="(max-width: 700px) 95vw, 860px"
           />
         </div>
       ))}
@@ -55,20 +52,7 @@ const galleryPhotos = allPhotos.filter(p =>
 
     {galleryPhotos.length === 0 && (
       <div class="no-photos">
-        <p>No photos in this collection yet. Tag photos to <strong>{gallery.data.slug}</strong> in the CMS.</p>
-      </div>
-    )}
-
-    {galleryPhotos.length > 1 && (
-      <div class="bottom-grid-section">
-        <p class="bottom-grid-label">All images</p>
-        <div class="bottom-grid">
-          {galleryPhotos.map((photo) => (
-            <div class="bottom-grid-item">
-              <LazyImage src={photo.data.image} alt={photo.data.alt || ''} width={400} sizes="25vw" objectFit="cover" />
-            </div>
-          ))}
-        </div>
+        <p>No photos tagged to <strong>{gallery.data.slug}</strong> yet.</p>
       </div>
     )}
 
@@ -96,7 +80,6 @@ const galleryPhotos = allPhotos.filter(p =>
 </Layout>
 
 <style>
-  /* Reuses same patterns as project detail */
   .collection-page {
     max-width: 900px;
     margin: 0 auto;
@@ -111,7 +94,7 @@ const galleryPhotos = allPhotos.filter(p =>
   }
 
   .collection-description {
-    font-family: var(--font-serif, 'DM Serif Text', Georgia, serif);
+    font-family: 'DM Serif Text', Georgia, serif;
     font-size: 15px;
     line-height: 1.75;
     color: #333;
@@ -120,7 +103,6 @@ const galleryPhotos = allPhotos.filter(p =>
   .image-feed {
     display: flex;
     flex-direction: column;
-    align-items: center;
     gap: 32px;
   }
 
@@ -130,58 +112,14 @@ const galleryPhotos = allPhotos.filter(p =>
     justify-content: center;
   }
 
-  .feed-image {
-    display: block;
-    max-width: 100%;
-    height: auto;
-    opacity: 0;
-    transition: opacity 0.4s ease;
-  }
-
-  .feed-image.loaded { opacity: 1; }
-
-  .feed-item[data-orientation="portrait"] .feed-image {
-    max-width: 60%;
-  }
+  .feed-item .li { width: 100%; }
+  .feed-item.portrait .li { width: 60%; }
 
   .no-photos {
     padding: 60px 20px;
     text-align: center;
     color: #999;
     font-size: 13px;
-  }
-
-  .bottom-grid-section {
-    margin-top: 80px;
-    padding-top: 32px;
-    border-top: 1px solid #e8e8e8;
-  }
-
-  .bottom-grid-label {
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: #999;
-    margin-bottom: 16px;
-  }
-
-  .bottom-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
-  }
-
-  .bottom-grid-item {
-    aspect-ratio: 1;
-    overflow: hidden;
-    background: #f0f0f0;
-  }
-
-  .bottom-grid-item img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
   }
 
   .collection-nav {
@@ -206,35 +144,17 @@ const galleryPhotos = allPhotos.filter(p =>
   }
 
   .collection-nav-link.next { text-align: right; }
-
-  .nav-dir {
-    font-size: 11px;
-    letter-spacing: 0.06em;
-    color: #999;
-  }
-
-  .nav-title {
-    font-size: 13px;
-    color: #111;
-    transition: opacity 0.15s ease;
-  }
-
+  .nav-dir { font-size: 11px; letter-spacing: 0.06em; color: #999; }
+  .nav-title { font-size: 13px; color: #111; transition: opacity 0.15s ease; }
   .collection-nav-link:hover .nav-title { opacity: 0.6; }
-
   .collection-nav-all {
-    font-size: 12px;
-    letter-spacing: 0.06em;
-    text-decoration: none;
-    color: #999;
-    white-space: nowrap;
-    transition: color 0.15s ease;
+    font-size: 12px; letter-spacing: 0.06em; text-decoration: none;
+    color: #999; white-space: nowrap; transition: color 0.15s ease;
   }
-
   .collection-nav-all:hover { color: #111; }
 
   @media (max-width: 700px) {
-    .bottom-grid { grid-template-columns: repeat(3, 1fr); }
-    .feed-item[data-orientation="portrait"] .feed-image { max-width: 80%; }
+    .feed-item.portrait .li { width: 80%; }
     .collection-nav-inner { grid-template-columns: 1fr; gap: 16px; }
     .collection-nav-link.next { text-align: left; }
     .collection-nav-all { order: -1; }
@@ -243,18 +163,13 @@ const galleryPhotos = allPhotos.filter(p =>
 
 <script>
   document.querySelectorAll('.feed-item').forEach(item => {
-    const img = item.querySelector('.feed-image') as HTMLImageElement;
+    const img = item.querySelector('img');
     if (!img) return;
-
-    function applyOrientation() {
-      if (img.naturalWidth > 0 && img.naturalHeight > 0) {
-        item.setAttribute('data-orientation',
-          img.naturalHeight > img.naturalWidth ? 'portrait' : 'landscape'
-        );
-        img.classList.add('loaded');
+    const check = () => {
+      if (img.naturalWidth > 0 && img.naturalHeight > img.naturalWidth) {
+        item.classList.add('portrait');
       }
-    }
-
-    img.complete ? applyOrientation() : img.addEventListener('load', applyOrientation);
+    };
+    img.complete ? check() : img.addEventListener('load', check, { once: true });
   });
 </script>

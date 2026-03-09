@@ -1,11 +1,11 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { getCollection } from 'astro:content';
 import LazyImage from '../../components/LazyImage.astro';
+import { getCollection } from 'astro:content';
 
 export async function getStaticPaths() {
-  const projects = await getCollection('projects', ({ data }) => data.published);
-  const sorted = projects.sort((a, b) => a.data.order - b.data.order);
+  const allProjects = await getCollection('projects', ({ data }) => data.published);
+  const sorted = allProjects.sort((a, b) => a.data.order - b.data.order);
 
   return sorted.map((project, index) => ({
     params: { slug: project.data.slug },
@@ -13,27 +13,16 @@ export async function getStaticPaths() {
       project,
       prevProject: index > 0 ? sorted[index - 1] : null,
       nextProject: index < sorted.length - 1 ? sorted[index + 1] : null,
-      totalProjects: sorted.length,
-      projectIndex: index,
     },
   }));
 }
 
 const { project, prevProject, nextProject } = Astro.props;
 
-// Get all photos belonging to this project
 const allPhotos = await getCollection('photos');
 const projectPhotos = allPhotos.filter(p =>
-  p.data.projects.some(proj => proj.slug === project.data.slug)
+  Array.isArray(p.data.projects) && p.data.projects.includes(project.data.slug)
 );
-
-// Sort by date if available, otherwise keep CMS order
-projectPhotos.sort((a, b) => {
-  if (a.data.date && b.data.date) {
-    return new Date(a.data.date).getTime() - new Date(b.data.date).getTime();
-  }
-  return 0;
-});
 ---
 
 <Layout
@@ -44,24 +33,20 @@ projectPhotos.sort((a, b) => {
 >
   <div class="project-page">
 
-    <!-- Project header -->
     <header class="project-header">
       {project.data.description && (
         <p class="project-description">{project.data.description}</p>
       )}
     </header>
 
-    <!-- Single column image feed -->
     <div class="image-feed">
       {projectPhotos.map((photo, i) => (
-        <div class="feed-item" data-image={photo.data.image}>
+        <div class="feed-item">
           <LazyImage
             src={photo.data.image}
-            alt={photo.data.alt || photo.data.title || ''}
+            alt={photo.data.alt || ''}
             eager={i < 2}
-            width={1400}
-            sizes="(max-width: 700px) 90vw, 900px"
-            class="feed-image"
+            sizes="(max-width: 700px) 95vw, 860px"
           />
         </div>
       ))}
@@ -69,23 +54,22 @@ projectPhotos.sort((a, b) => {
 
     {projectPhotos.length === 0 && (
       <div class="no-photos">
-        <p>No photos in this project yet. Tag photos to <strong>{project.data.slug}</strong> in the CMS.</p>
+        <p>No photos tagged to <strong>{project.data.slug}</strong> yet.</p>
+        <p>In the CMS, open a photo and add <strong>{project.data.slug}</strong> to its Projects list.</p>
       </div>
     )}
 
-    <!-- Bottom image grid (all photos in project) -->
     {projectPhotos.length > 1 && (
       <div class="bottom-grid-section">
         <p class="bottom-grid-label">All images</p>
         <div class="bottom-grid">
-          {projectPhotos.map((photo, i) => (
+          {projectPhotos.map((photo) => (
             <div class="bottom-grid-item">
               <LazyImage
                 src={photo.data.image}
                 alt={photo.data.alt || ''}
-                width={400}
+                cover={true}
                 sizes="25vw"
-                objectFit="cover"
               />
             </div>
           ))}
@@ -93,7 +77,6 @@ projectPhotos.sort((a, b) => {
       </div>
     )}
 
-    <!-- Project navigation -->
     <nav class="project-nav">
       <div class="project-nav-inner">
         {prevProject ? (
@@ -124,7 +107,6 @@ projectPhotos.sort((a, b) => {
     padding: 0 20px 80px;
   }
 
-  /* ─── HEADER ────────────────────────────────────── */
   .project-header {
     padding: 48px 0 40px;
     max-width: 560px;
@@ -133,56 +115,41 @@ projectPhotos.sort((a, b) => {
   }
 
   .project-description {
-    font-family: var(--font-serif, 'DM Serif Text', Georgia, serif);
+    font-family: 'DM Serif Text', Georgia, serif;
     font-size: 15px;
     line-height: 1.75;
     color: #333;
   }
 
-  /* ─── IMAGE FEED ────────────────────────────────── */
   .image-feed {
     display: flex;
     flex-direction: column;
-    align-items: center;
     gap: 32px;
   }
 
+  /* Portrait images constrained to 60% width */
   .feed-item {
     width: 100%;
     display: flex;
     justify-content: center;
   }
 
-  .feed-image {
-    display: block;
-    max-width: 100%;
-    height: auto;
-    opacity: 0;
-    transition: opacity 0.4s ease;
+  .feed-item .li {
+    width: 100%;
   }
 
-  .feed-image.loaded {
-    opacity: 1;
+  .feed-item.portrait .li {
+    width: 60%;
   }
 
-  /* ─── Portrait vs Landscape handling ────────────
-     Portrait images (taller than wide) are constrained
-     to 60% width so they don't feel disproportionate.
-     Landscape images fill the full column width.
-  ──────────────────────────────────────────────── */
-  .feed-item[data-orientation="portrait"] .feed-image {
-    max-width: 60%;
-  }
-
-  /* ─── NO PHOTOS ─────────────────────────────────── */
   .no-photos {
     padding: 60px 20px;
     text-align: center;
     color: #999;
     font-size: 13px;
+    line-height: 2;
   }
 
-  /* ─── BOTTOM GRID ───────────────────────────────── */
   .bottom-grid-section {
     margin-top: 80px;
     padding-top: 32px;
@@ -206,22 +173,13 @@ projectPhotos.sort((a, b) => {
   .bottom-grid-item {
     aspect-ratio: 1;
     overflow: hidden;
-    background: #f0f0f0;
   }
 
-  .bottom-grid-item img {
+  .bottom-grid-item .li {
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    display: block;
-    transition: opacity 0.2s ease;
   }
 
-  .bottom-grid-item:hover img {
-    opacity: 0.85;
-  }
-
-  /* ─── PROJECT NAV ───────────────────────────────── */
   .project-nav {
     margin-top: 64px;
     padding-top: 32px;
@@ -243,9 +201,7 @@ projectPhotos.sort((a, b) => {
     gap: 4px;
   }
 
-  .project-nav-link.next {
-    text-align: right;
-  }
+  .project-nav-link.next { text-align: right; }
 
   .nav-dir {
     font-size: 11px;
@@ -259,9 +215,7 @@ projectPhotos.sort((a, b) => {
     transition: opacity 0.15s ease;
   }
 
-  .project-nav-link:hover .nav-title {
-    opacity: 0.6;
-  }
+  .project-nav-link:hover .nav-title { opacity: 0.6; }
 
   .project-nav-all {
     font-size: 12px;
@@ -272,57 +226,29 @@ projectPhotos.sort((a, b) => {
     transition: color 0.15s ease;
   }
 
-  .project-nav-all:hover {
-    color: #111;
-  }
+  .project-nav-all:hover { color: #111; }
 
-  /* ─── RESPONSIVE ────────────────────────────────── */
   @media (max-width: 700px) {
-    .bottom-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-
-    .feed-item[data-orientation="portrait"] .feed-image {
-      max-width: 80%;
-    }
-
-    .project-nav-inner {
-      grid-template-columns: 1fr;
-      gap: 16px;
-    }
-
-    .project-nav-link.next {
-      text-align: left;
-    }
-
-    .project-nav-all {
-      order: -1;
-    }
+    .bottom-grid { grid-template-columns: repeat(3, 1fr); }
+    .feed-item.portrait .li { width: 80%; }
+    .project-nav-inner { grid-template-columns: 1fr; gap: 16px; }
+    .project-nav-link.next { text-align: left; }
+    .project-nav-all { order: -1; }
   }
 </style>
 
 <script>
-  // ─── Detect portrait vs landscape images ────────────────────
-  // and apply constrained width to portrait images
+  // Detect portrait images and constrain width
   document.querySelectorAll('.feed-item').forEach(item => {
-    const img = item.querySelector('.feed-image') as HTMLImageElement;
+    const img = item.querySelector('img');
     if (!img) return;
 
-    function applyOrientation() {
-      if (img.naturalWidth > 0 && img.naturalHeight > 0) {
-        if (img.naturalHeight > img.naturalWidth) {
-          item.setAttribute('data-orientation', 'portrait');
-        } else {
-          item.setAttribute('data-orientation', 'landscape');
-        }
-        img.classList.add('loaded');
+    const check = () => {
+      if (img.naturalWidth > 0 && img.naturalHeight > img.naturalWidth) {
+        item.classList.add('portrait');
       }
-    }
+    };
 
-    if (img.complete) {
-      applyOrientation();
-    } else {
-      img.addEventListener('load', applyOrientation);
-    }
+    img.complete ? check() : img.addEventListener('load', check, { once: true });
   });
 </script>
