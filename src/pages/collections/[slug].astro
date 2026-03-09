@@ -19,9 +19,38 @@ export async function getStaticPaths() {
 const { gallery, prevGallery, nextGallery } = Astro.props;
 
 const allPhotos = await getCollection('photos');
-const galleryPhotos = allPhotos.filter(p =>
-  Array.isArray(p.data.collections) && p.data.collections.includes(gallery.data.slug)
+const photosByTitle = Object.fromEntries(
+  allPhotos.map(p => [p.data.title?.toLowerCase().trim(), p])
 );
+
+type SingleRow = { type: 'single'; photo: typeof allPhotos[0] };
+type PairRow   = { type: 'pair';   photos: [typeof allPhotos[0], typeof allPhotos[0]] };
+type Row = SingleRow | PairRow;
+
+const sequence = gallery.data.photoSequence ?? [];
+const rows: Row[] = [];
+let i = 0;
+
+while (i < sequence.length) {
+  const entry = sequence[i];
+  const photo = photosByTitle[entry.photo.toLowerCase().trim()];
+  if (!photo) { i++; continue; }
+
+  if (entry.layout === 'pair' && i + 1 < sequence.length) {
+    const nextEntry = sequence[i + 1];
+    const nextPhoto = photosByTitle[nextEntry.photo.toLowerCase().trim()];
+    if (nextPhoto && nextEntry.layout === 'pair') {
+      rows.push({ type: 'pair', photos: [photo, nextPhoto] });
+      i += 2;
+      continue;
+    }
+  }
+
+  rows.push({ type: 'single', photo });
+  i++;
+}
+
+const hasSequence = sequence.length > 0;
 ---
 
 <Layout
@@ -31,37 +60,57 @@ const galleryPhotos = allPhotos.filter(p =>
 >
   <div class="collection-page">
 
-    <header class="collection-header">
-      {gallery.data.description && (
+    {gallery.data.description && (
+      <header class="collection-header">
         <p class="collection-description">{gallery.data.description}</p>
-      )}
-    </header>
+      </header>
+    )}
 
     <div class="image-feed">
-      {galleryPhotos.map((photo, i) => (
-        <div class="feed-item">
-          <LazyImage
-            src={photo.data.image}
-            alt={photo.data.alt || ''}
-            eager={i < 2}
-            sizes="(max-width: 700px) 95vw, 860px"
-          />
+      {hasSequence ? rows.map(row => (
+        row.type === 'single' ? (
+          <div class="feed-single">
+            <div class="feed-img-wrap" data-detect-orientation>
+              <LazyImage
+                src={row.photo.data.image}
+                alt={row.photo.data.alt || ''}
+                sizes="(max-width: 700px) 95vw, 860px"
+              />
+            </div>
+          </div>
+        ) : (
+          <div class="feed-pair">
+            <div class="feed-pair-img">
+              <LazyImage
+                src={row.photos[0].data.image}
+                alt={row.photos[0].data.alt || ''}
+                cover={true}
+                sizes="(max-width: 700px) 50vw, 430px"
+              />
+            </div>
+            <div class="feed-pair-img">
+              <LazyImage
+                src={row.photos[1].data.image}
+                alt={row.photos[1].data.alt || ''}
+                cover={true}
+                sizes="(max-width: 700px) 50vw, 430px"
+              />
+            </div>
+          </div>
+        )
+      )) : (
+        <div class="no-photos">
+          <p>Add photos to this collection using the Photo Sequence in the CMS.</p>
         </div>
-      ))}
+      )}
     </div>
-
-    {galleryPhotos.length === 0 && (
-      <div class="no-photos">
-        <p>No photos tagged to <strong>{gallery.data.slug}</strong> yet.</p>
-      </div>
-    )}
 
     <nav class="collection-nav">
       <div class="collection-nav-inner">
         {prevGallery ? (
           <a href={`/collections/${prevGallery.data.slug}`} class="collection-nav-link prev">
             <span class="nav-dir">← Previous</span>
-            <span class="nav-title">{prevGallery.data.title}</span>
+            <span class="nav-name">{prevGallery.data.title}</span>
           </a>
         ) : <div />}
 
@@ -70,7 +119,7 @@ const galleryPhotos = allPhotos.filter(p =>
         {nextGallery ? (
           <a href={`/collections/${nextGallery.data.slug}`} class="collection-nav-link next">
             <span class="nav-dir">Next →</span>
-            <span class="nav-title">{nextGallery.data.title}</span>
+            <span class="nav-name">{nextGallery.data.title}</span>
           </a>
         ) : <div />}
       </div>
@@ -94,10 +143,9 @@ const galleryPhotos = allPhotos.filter(p =>
   }
 
   .collection-description {
-    font-family: var(--font);
-    font-size: 15px;
-    line-height: 1.75;
-    color: #333;
+    font-size: 14px;
+    line-height: 1.8;
+    color: #444;
   }
 
   .image-feed {
@@ -106,14 +154,29 @@ const galleryPhotos = allPhotos.filter(p =>
     gap: 32px;
   }
 
-  .feed-item {
-    width: 100%;
+  .feed-single {
     display: flex;
     justify-content: center;
   }
 
-  .feed-item .li { width: 100%; }
-  .feed-item.portrait .li { width: 60%; }
+  .feed-img-wrap { width: 100%; }
+  .feed-img-wrap.is-portrait { width: 60%; }
+
+  .feed-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .feed-pair-img {
+    aspect-ratio: 3 / 2;
+    overflow: hidden;
+  }
+
+  .feed-pair-img .li {
+    width: 100%;
+    height: 100%;
+  }
 
   .no-photos {
     padding: 60px 20px;
@@ -145,8 +208,9 @@ const galleryPhotos = allPhotos.filter(p =>
 
   .collection-nav-link.next { text-align: right; }
   .nav-dir { font-size: 11px; letter-spacing: 0.06em; color: #999; }
-  .nav-title { font-size: 13px; color: #111; transition: opacity 0.15s ease; }
-  .collection-nav-link:hover .nav-title { opacity: 0.6; }
+  .nav-name { font-size: 13px; color: #111; transition: opacity 0.15s ease; }
+  .collection-nav-link:hover .nav-name { opacity: 0.6; }
+
   .collection-nav-all {
     font-size: 12px; letter-spacing: 0.06em; text-decoration: none;
     color: #999; white-space: nowrap; transition: color 0.15s ease;
@@ -154,7 +218,7 @@ const galleryPhotos = allPhotos.filter(p =>
   .collection-nav-all:hover { color: #111; }
 
   @media (max-width: 700px) {
-    .feed-item.portrait .li { width: 80%; }
+    .feed-img-wrap.is-portrait { width: 80%; }
     .collection-nav-inner { grid-template-columns: 1fr; gap: 16px; }
     .collection-nav-link.next { text-align: left; }
     .collection-nav-all { order: -1; }
@@ -162,14 +226,14 @@ const galleryPhotos = allPhotos.filter(p =>
 </style>
 
 <script>
-  document.querySelectorAll('.feed-item').forEach(item => {
-    const img = item.querySelector('img');
+  document.querySelectorAll('[data-detect-orientation]').forEach(wrap => {
+    const img = wrap.querySelector('img');
     if (!img) return;
     const check = () => {
       if (img.naturalWidth > 0 && img.naturalHeight > img.naturalWidth) {
-        item.classList.add('portrait');
+        wrap.classList.add('is-portrait');
       }
     };
-    img.complete ? check() : img.addEventListener('load', check, { once: true });
+    (img as HTMLImageElement).complete ? check() : img.addEventListener('load', check, { once: true });
   });
 </script>

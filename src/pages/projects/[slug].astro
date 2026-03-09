@@ -19,10 +19,50 @@ export async function getStaticPaths() {
 
 const { project, prevProject, nextProject } = Astro.props;
 
+// Build a lookup of all photos by title
 const allPhotos = await getCollection('photos');
-const projectPhotos = allPhotos.filter(p =>
-  Array.isArray(p.data.projects) && p.data.projects.includes(project.data.slug)
+const photosByTitle = Object.fromEntries(
+  allPhotos.map(p => [p.data.title?.toLowerCase().trim(), p])
 );
+
+// Resolve the photo sequence into ordered, typed rows
+type SingleRow = { type: 'single'; photo: typeof allPhotos[0] };
+type PairRow   = { type: 'pair';   photos: [typeof allPhotos[0], typeof allPhotos[0]] };
+type Row = SingleRow | PairRow;
+
+const sequence = project.data.photoSequence ?? [];
+const rows: Row[] = [];
+let i = 0;
+
+while (i < sequence.length) {
+  const entry = sequence[i];
+  const photo = photosByTitle[entry.photo.toLowerCase().trim()];
+  if (!photo) { i++; continue; } // skip if photo not found
+
+  if (entry.layout === 'pair' && i + 1 < sequence.length) {
+    const nextEntry = sequence[i + 1];
+    const nextPhoto = photosByTitle[nextEntry.photo.toLowerCase().trim()];
+    if (nextPhoto && nextEntry.layout === 'pair') {
+      rows.push({ type: 'pair', photos: [photo, nextPhoto] });
+      i += 2;
+      continue;
+    }
+  }
+
+  rows.push({ type: 'single', photo });
+  i++;
+}
+
+// Fallback: if no sequence defined, show all tagged photos
+const hasSequence = sequence.length > 0;
+const fallbackPhotos = hasSequence ? [] : allPhotos.filter(p =>
+  Array.isArray(p.data.projects) && p.data.projects?.includes(project.data.slug)
+);
+
+// All photos for the bottom grid
+const allProjectPhotos = hasSequence
+  ? rows.flatMap(r => r.type === 'pair' ? r.photos : [r.photo])
+  : fallbackPhotos;
 ---
 
 <Layout
@@ -33,43 +73,72 @@ const projectPhotos = allPhotos.filter(p =>
 >
   <div class="project-page">
 
-    <header class="project-header">
-      {project.data.description && (
+    {project.data.description && (
+      <header class="project-header">
         <p class="project-description">{project.data.description}</p>
-      )}
-    </header>
-
-    <div class="image-feed">
-      {projectPhotos.map((photo, i) => (
-        <div class="feed-item">
-          <LazyImage
-            src={photo.data.image}
-            alt={photo.data.alt || ''}
-            eager={i < 2}
-            sizes="(max-width: 700px) 95vw, 860px"
-          />
-        </div>
-      ))}
-    </div>
-
-    {projectPhotos.length === 0 && (
-      <div class="no-photos">
-        <p>No photos tagged to <strong>{project.data.slug}</strong> yet.</p>
-        <p>In the CMS, open a photo and add <strong>{project.data.slug}</strong> to its Projects list.</p>
-      </div>
+      </header>
     )}
 
-    {projectPhotos.length > 1 && (
+    <div class="image-feed">
+      {hasSequence ? rows.map(row => (
+        row.type === 'single' ? (
+          <div class="feed-single">
+            <div class="feed-img-wrap" data-detect-orientation>
+              <LazyImage
+                src={row.photo.data.image}
+                alt={row.photo.data.alt || ''}
+                sizes="(max-width: 700px) 95vw, 860px"
+              />
+            </div>
+          </div>
+        ) : (
+          <div class="feed-pair">
+            <div class="feed-pair-img">
+              <LazyImage
+                src={row.photos[0].data.image}
+                alt={row.photos[0].data.alt || ''}
+                cover={true}
+                sizes="(max-width: 700px) 50vw, 430px"
+              />
+            </div>
+            <div class="feed-pair-img">
+              <LazyImage
+                src={row.photos[1].data.image}
+                alt={row.photos[1].data.alt || ''}
+                cover={true}
+                sizes="(max-width: 700px) 50vw, 430px"
+              />
+            </div>
+          </div>
+        )
+      )) : fallbackPhotos.length > 0 ? fallbackPhotos.map((photo, idx) => (
+        <div class="feed-single">
+          <div class="feed-img-wrap" data-detect-orientation>
+            <LazyImage
+              src={photo.data.image}
+              alt={photo.data.alt || ''}
+              eager={idx < 2}
+              sizes="(max-width: 700px) 95vw, 860px"
+            />
+          </div>
+        </div>
+      )) : (
+        <div class="no-photos">
+          <p>Add photos to this project using the Photo Sequence in the CMS.</p>
+        </div>
+      )}
+    </div>
+
+    {allProjectPhotos.length > 1 && (
       <div class="bottom-grid-section">
         <p class="bottom-grid-label">All images</p>
         <div class="bottom-grid">
-          {projectPhotos.map((photo) => (
+          {allProjectPhotos.map(photo => (
             <div class="bottom-grid-item">
               <LazyImage
                 src={photo.data.image}
                 alt={photo.data.alt || ''}
-                cover={true}
-                sizes="25vw"
+                sizes="(max-width: 700px) 33vw, 220px"
               />
             </div>
           ))}
@@ -82,7 +151,7 @@ const projectPhotos = allPhotos.filter(p =>
         {prevProject ? (
           <a href={`/projects/${prevProject.data.slug}`} class="project-nav-link prev">
             <span class="nav-dir">← Previous</span>
-            <span class="nav-title">{prevProject.data.title}</span>
+            <span class="nav-name">{prevProject.data.title}</span>
           </a>
         ) : <div />}
 
@@ -91,7 +160,7 @@ const projectPhotos = allPhotos.filter(p =>
         {nextProject ? (
           <a href={`/projects/${nextProject.data.slug}`} class="project-nav-link next">
             <span class="nav-dir">Next →</span>
-            <span class="nav-title">{nextProject.data.title}</span>
+            <span class="nav-name">{nextProject.data.title}</span>
           </a>
         ) : <div />}
       </div>
@@ -107,6 +176,7 @@ const projectPhotos = allPhotos.filter(p =>
     padding: 0 20px 80px;
   }
 
+  /* ── Header ─────────────────────────────────── */
   .project-header {
     padding: 48px 0 40px;
     max-width: 560px;
@@ -115,33 +185,53 @@ const projectPhotos = allPhotos.filter(p =>
   }
 
   .project-description {
-    font-family: var(--font);
-    font-size: 15px;
-    line-height: 1.75;
-    color: #333;
+    font-size: 14px;
+    line-height: 1.8;
+    color: #444;
   }
 
+  /* ── Feed ───────────────────────────────────── */
   .image-feed {
     display: flex;
     flex-direction: column;
     gap: 32px;
   }
 
-  /* Portrait images constrained to 60% width */
-  .feed-item {
-    width: 100%;
+  /* Single image row */
+  .feed-single {
     display: flex;
     justify-content: center;
   }
 
-  .feed-item .li {
+  .feed-img-wrap {
     width: 100%;
   }
 
-  .feed-item.portrait .li {
+  /* Portrait: constrained to 60% width */
+  .feed-img-wrap.is-portrait {
     width: 60%;
   }
 
+  /* Pair row: two images side by side, same height */
+  .feed-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    /* Fixed aspect ratio container so both images share the same height */
+  }
+
+  .feed-pair-img {
+    /* Each image fills its cell; object-fit:cover applied via LazyImage cover prop */
+    aspect-ratio: 3 / 2;
+    overflow: hidden;
+  }
+
+  .feed-pair-img .li {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* ── No photos ──────────────────────────────── */
   .no-photos {
     padding: 60px 20px;
     text-align: center;
@@ -150,6 +240,7 @@ const projectPhotos = allPhotos.filter(p =>
     line-height: 2;
   }
 
+  /* ── Bottom grid ────────────────────────────── */
   .bottom-grid-section {
     margin-top: 80px;
     padding-top: 32px;
@@ -168,18 +259,14 @@ const projectPhotos = allPhotos.filter(p =>
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 6px;
-  }
-
-  .bottom-grid-item {
-    aspect-ratio: 1;
-    overflow: hidden;
+    align-items: start; /* natural height, no stretch */
   }
 
   .bottom-grid-item .li {
     width: 100%;
-    height: 100%;
   }
 
+  /* ── Project nav ────────────────────────────── */
   .project-nav {
     margin-top: 64px;
     padding-top: 32px;
@@ -209,13 +296,13 @@ const projectPhotos = allPhotos.filter(p =>
     color: #999;
   }
 
-  .nav-title {
+  .nav-name {
     font-size: 13px;
     color: #111;
     transition: opacity 0.15s ease;
   }
 
-  .project-nav-link:hover .nav-title { opacity: 0.6; }
+  .project-nav-link:hover .nav-name { opacity: 0.6; }
 
   .project-nav-all {
     font-size: 12px;
@@ -230,7 +317,7 @@ const projectPhotos = allPhotos.filter(p =>
 
   @media (max-width: 700px) {
     .bottom-grid { grid-template-columns: repeat(3, 1fr); }
-    .feed-item.portrait .li { width: 80%; }
+    .feed-img-wrap.is-portrait { width: 80%; }
     .project-nav-inner { grid-template-columns: 1fr; gap: 16px; }
     .project-nav-link.next { text-align: left; }
     .project-nav-all { order: -1; }
@@ -238,17 +325,15 @@ const projectPhotos = allPhotos.filter(p =>
 </style>
 
 <script>
-  // Detect portrait images and constrain width
-  document.querySelectorAll('.feed-item').forEach(item => {
-    const img = item.querySelector('img');
+  // Detect portrait images in single-column feed and constrain width
+  document.querySelectorAll('[data-detect-orientation]').forEach(wrap => {
+    const img = wrap.querySelector('img');
     if (!img) return;
-
     const check = () => {
       if (img.naturalWidth > 0 && img.naturalHeight > img.naturalWidth) {
-        item.classList.add('portrait');
+        wrap.classList.add('is-portrait');
       }
     };
-
-    img.complete ? check() : img.addEventListener('load', check, { once: true });
+    (img as HTMLImageElement).complete ? check() : img.addEventListener('load', check, { once: true });
   });
 </script>

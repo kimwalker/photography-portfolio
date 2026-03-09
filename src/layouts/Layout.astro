@@ -33,7 +33,6 @@ const showCollections = galleries.length > 0;
 
       :root {
         --black: #111;
-        --gray-dark: #555;
         --gray-mid: #999;
         --gray-light: #e8e8e8;
         --white: #fff;
@@ -51,16 +50,11 @@ const showCollections = galleries.length > 0;
         -moz-osx-font-smoothing: grayscale;
       }
 
-      body {
-        min-height: 100vh;
-      }
+      body { min-height: 100vh; }
 
-      /* ─── NAV ──────────────────────────────────── */
       nav {
         position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
+        top: 0; left: 0; right: 0;
         z-index: 100;
         height: var(--nav-height);
         display: grid;
@@ -70,11 +64,10 @@ const showCollections = galleries.length > 0;
         background: rgba(255,255,255,0.92);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
-        border-bottom: 1px solid var(--gray-light);
       }
 
       .nav-left a {
-        font-size: 13px;
+        font-size: 18px;
         text-decoration: none;
         color: var(--black);
       }
@@ -85,13 +78,13 @@ const showCollections = galleries.length > 0;
       }
 
       .nav-center .title {
-        font-size: 12px;
+        font-size: 18px;
         color: var(--black);
         display: block;
       }
 
       .nav-center .sub {
-        font-size: 11px;
+        font-size: 18px;
         color: var(--gray-mid);
         display: block;
       }
@@ -100,22 +93,19 @@ const showCollections = galleries.length > 0;
         display: flex;
         align-items: center;
         justify-content: flex-end;
-        gap: 20px;
+        gap: 24px;
       }
 
       .nav-right a {
-        font-size: 12px;
+        font-size: 18px;
         text-decoration: none;
         color: var(--gray-mid);
         transition: color 0.15s ease;
       }
 
       .nav-right a:hover,
-      .nav-right a.active {
-        color: var(--black);
-      }
+      .nav-right a.active { color: var(--black); }
 
-      /* ─── MOBILE NAV ───────────────────────────── */
       .hamburger {
         display: none;
         flex-direction: column;
@@ -142,8 +132,7 @@ const showCollections = galleries.length > 0;
         display: none;
         position: fixed;
         top: var(--nav-height);
-        left: 0;
-        right: 0;
+        left: 0; right: 0;
         background: var(--white);
         border-bottom: 1px solid var(--gray-light);
         padding: 16px 20px;
@@ -154,7 +143,7 @@ const showCollections = galleries.length > 0;
       .mobile-menu.open { display: flex; }
 
       .mobile-menu a {
-        font-size: 13px;
+        font-size: 18px;
         text-decoration: none;
         color: var(--gray-mid);
         padding: 12px 0;
@@ -166,15 +155,11 @@ const showCollections = galleries.length > 0;
       .mobile-menu a.active,
       .mobile-menu a:hover { color: var(--black); }
 
-      /* ─── MAIN ─────────────────────────────────── */
-      main {
-        padding-top: var(--nav-height);
-      }
+      main { padding-top: var(--nav-height); }
 
       @media (max-width: 768px) {
         nav { grid-template-columns: 1fr auto; }
-        .nav-center,
-        .nav-right { display: none; }
+        .nav-center, .nav-right { display: none; }
         .hamburger { display: flex; }
       }
     </style>
@@ -206,9 +191,7 @@ const showCollections = galleries.length > 0;
       </div>
 
       <button class="hamburger" id="hamburger" aria-label="Menu">
-        <span></span>
-        <span></span>
-        <span></span>
+        <span></span><span></span><span></span>
       </button>
     </nav>
 
@@ -221,19 +204,15 @@ const showCollections = galleries.length > 0;
       <a href="/about" class={activeNav === 'about' ? 'active' : ''}>About</a>
     </div>
 
-    <main>
-      <slot />
-    </main>
+    <main><slot /></main>
 
     <script>
       const hamburger = document.getElementById('hamburger');
       const mobileMenu = document.getElementById('mobile-menu');
-
       hamburger?.addEventListener('click', () => {
         hamburger.classList.toggle('open');
         mobileMenu?.classList.toggle('open');
       });
-
       mobileMenu?.querySelectorAll('a').forEach(link => {
         link.addEventListener('click', () => {
           hamburger?.classList.remove('open');

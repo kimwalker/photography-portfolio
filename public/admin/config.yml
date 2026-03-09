@@ -21,7 +21,7 @@ collections:
       - label: "Title"
         name: "title"
         widget: "string"
-        hint: "Internal reference only — not shown publicly."
+        hint: "Internal reference — used to identify this photo in project sequences."
       - label: "Alt text"
         name: "alt"
         widget: "string"
@@ -30,16 +30,6 @@ collections:
         name: "featured"
         widget: "boolean"
         default: false
-      - label: "Projects"
-        name: "projects"
-        widget: "list"
-        required: false
-        hint: "Comma-separated project slugs. E.g. domestic-office"
-      - label: "Collections"
-        name: "collections"
-        widget: "list"
-        required: false
-        hint: "Comma-separated collection slugs. E.g. street"
       - label: "Date"
         name: "date"
         widget: "datetime"
@@ -80,10 +70,28 @@ collections:
         widget: "number"
         default: 99
         value_type: "int"
+        hint: "Controls order in the Projects grid. 1 = first."
       - label: "Published"
         name: "published"
         widget: "boolean"
         default: true
+      - label: "Photo Sequence"
+        name: "photoSequence"
+        widget: "list"
+        required: false
+        hint: "Add photos in order. Set layout to 'pair' on two consecutive photos to show them side by side."
+        fields:
+          - label: "Photo title"
+            name: "photo"
+            widget: "string"
+            hint: "Must match the Title field of the photo exactly."
+          - label: "Layout"
+            name: "layout"
+            widget: "select"
+            options:
+              - { label: "Single (full width)", value: "single" }
+              - { label: "Pair (side by side)", value: "pair" }
+            default: "single"
 
   - name: "galleries"
     label: "Collections"
@@ -100,6 +108,7 @@ collections:
       - label: "Slug"
         name: "slug"
         widget: "string"
+        hint: "Lowercase, hyphens only. E.g. street"
       - label: "Description"
         name: "description"
         widget: "text"
@@ -111,3 +120,20 @@ collections:
         name: "published"
         widget: "boolean"
         default: true
+      - label: "Photo Sequence"
+        name: "photoSequence"
+        widget: "list"
+        required: false
+        hint: "Add photos in order. Set layout to 'pair' on two consecutive photos to show them side by side."
+        fields:
+          - label: "Photo title"
+            name: "photo"
+            widget: "string"
+            hint: "Must match the Title field of the photo exactly."
+          - label: "Layout"
+            name: "layout"
+            widget: "select"
+            options:
+              - { label: "Single (full width)", value: "single" }
+              - { label: "Pair (side by side)", value: "pair" }
+            default: "single"

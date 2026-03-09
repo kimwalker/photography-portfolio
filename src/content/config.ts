@@ -1,5 +1,10 @@
 import { defineCollection, z } from 'astro:content';
 
+const photoSequenceItem = z.object({
+  photo: z.string(),
+  layout: z.enum(['single', 'pair']).default('single'),
+});
+
 const photos = defineCollection({
   type: 'data',
   schema: z.object({
@@ -7,8 +12,6 @@ const photos = defineCollection({
     title: z.string().optional(),
     alt: z.string().optional().default(''),
     featured: z.boolean().default(false),
-    projects: z.array(z.string()).optional().default([]),
-    collections: z.array(z.string()).optional().default([]),
     date: z.string().optional(),
   }),
 });
@@ -23,6 +26,7 @@ const projects = defineCollection({
     cover: z.string(),
     order: z.number().default(99),
     published: z.boolean().default(true),
+    photoSequence: z.array(photoSequenceItem).optional().default([]),
   }),
 });
 
@@ -34,6 +38,7 @@ const galleries = defineCollection({
     description: z.string().optional(),
     cover: z.string(),
     published: z.boolean().default(true),
+    photoSequence: z.array(photoSequenceItem).optional().default([]),
   }),
 });
 
