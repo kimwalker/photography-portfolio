@@ -8,11 +8,11 @@
   "cover": "/images/uploads/kw020197-1152x1536.jpg",
   "photoSequence": [
     {
-      "layout": "single",
+      "layout": "pair",
       "photo": "Rocks"
     },
     {
-      "layout": "single",
+      "layout": "pair",
       "photo": "Eggs"
     },
     {
