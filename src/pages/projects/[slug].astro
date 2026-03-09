@@ -97,7 +97,6 @@ const allProjectPhotos = hasSequence
               <LazyImage
                 src={row.photos[0].data.image}
                 alt={row.photos[0].data.alt || ''}
-                cover={true}
                 sizes="(max-width: 700px) 50vw, 430px"
               />
             </div>
@@ -105,7 +104,6 @@ const allProjectPhotos = hasSequence
               <LazyImage
                 src={row.photos[1].data.image}
                 alt={row.photos[1].data.alt || ''}
-                cover={true}
                 sizes="(max-width: 700px) 50vw, 430px"
               />
             </div>
@@ -173,7 +171,7 @@ const allProjectPhotos = hasSequence
   .project-page {
     max-width: 900px;
     margin: 0 auto;
-    padding: 0 20px 80px;
+    padding: 20px 20px 80px;
   }
 
   /* ── Header ─────────────────────────────────── */
@@ -217,18 +215,15 @@ const allProjectPhotos = hasSequence
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 6px;
-    /* Fixed aspect ratio container so both images share the same height */
+    align-items: start;
   }
 
   .feed-pair-img {
-    /* Each image fills its cell; object-fit:cover applied via LazyImage cover prop */
-    aspect-ratio: 3 / 2;
     overflow: hidden;
   }
 
   .feed-pair-img .li {
     width: 100%;
-    height: 100%;
   }
 
   /* ── No photos ──────────────────────────────── */
